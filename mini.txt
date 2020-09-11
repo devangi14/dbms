@@ -1,0 +1,266 @@
+drop database mini;
+create database mini;
+use mini;
+
+CREATE TABLE member (
+    mem_id INT auto_increment,
+    mem_date DATE,
+    mem_name  VARCHAR(20),
+    phone_no long,
+    passwords varchar(20),
+    PRIMARY KEY(mem_id) 
+);
+
+CREATE TABLE book (
+    book_id INT auto_increment,
+    book_name  VARCHAR(20),
+    amount INT,
+    author  VARCHAR(20),
+    PRIMARY KEY(book_id) 
+);
+select * from member;
+
+
+
+CREATE TABLE issue (
+    member_id INT,
+    book_id  INT,
+    issue_date DATE,
+    -- PRIMARY KEY(member_id),
+    CONSTRAINT FK5 FOREIGN KEY(book_id)
+     REFERENCES
+    book(book_id),
+    CONSTRAINT FK6 FOREIGN KEY(member_id)
+     REFERENCES
+    member(mem_id) 
+);
+CREATE TABLE payment (
+    payment_id  INT auto_increment,
+    fine INT,
+    fine_date DATE,
+    PRIMARY KEY(payment_id),
+    book_id INT,
+    member_id INT,
+    CONSTRAINT FK1 FOREIGN KEY(book_id)
+     REFERENCES
+    book(book_id),
+    CONSTRAINT FK2 FOREIGN KEY(member_id)
+     REFERENCES
+    member(mem_id)
+    
+);
+
+CREATE TABLE return_ (
+    book_id INT,
+    member_id  INT,
+    return_date DATE,
+    ret_status boolean,
+    payment_id int,
+    CONSTRAINT FK3 FOREIGN KEY(book_id)
+     REFERENCES
+    book(book_id),
+    CONSTRAINT FK4 FOREIGN KEY(member_id)
+     REFERENCES
+    member(mem_id) ,
+    constraint FK8 foreign key (payment_id) references payment(payment_id)
+);
+
+insert into  member (mem_date,mem_name,phone_no,passwords) values("2020-06-07","dev","9890374563","ddev");
+insert into member (mem_date,mem_name,phone_no,passwords) values("2020-06-07","deva","9890374553","dev");
+
+
+insert into book(book_name,amount,author) values("harry",200,"rowling");
+insert into book(book_name,amount,author) values("harry",100,"rowling");
+
+insert into issue values(1,1,"2020-02-06");
+insert into issue values(1,2,"2020-05-06");
+insert into issue values(2,2,"2020-05-06");
+insert into issue values(2,1,"2020-10-06");
+
+
+insert into payment(fine,fine_date,book_id,member_id) values(100,"2020-08-09",1,1);
+insert into payment(fine,fine_date,book_id,member_id) values(100,"2020-08-09",2,2);
+
+insert into return_ values(1,1,"2020-05-09",1,1);
+insert into return_ values(2,2,"2020-05-09",1,2);
+insert into return_ values(1,2,"2021-1-09",0,null);
+insert into return_ values(2,1,"2020-1-09",1,null);
+
+select * from payment;
+select * from book;
+select * from return_;
+select * from issue;
+select * from member;
+
+select book_id from book 
+where book_name="mossad";
+
+update return_
+set ret_status=0
+where member_id=3 and book_id=3;
+
+delimiter $$
+create procedure return_date(in issue_date date,out return_date date)
+
+begin
+
+select DATE_ADD(issue_date, INTERVAL 3 MONTH) into return_date;
+
+end$$
+
+delimiter ;
+call return_date("2020-06-01",@r);
+select @r;
+
+delimiter $$
+create procedure avail(in bk_id int,out res int)
+
+begin
+if bk_id not in (select book_id from return_ where ret_status=1) then
+set res=0;
+else
+set res=1;
+end if;
+end$$
+
+delimiter ;
+call avail(5,@r);
+select @r;
+select * from return_;
+
+-- delimiter $$
+-- create procedure renew(in member_idn int,in book_idn int,in issue_daten date)
+-- deterministic
+-- begin
+-- update issue
+-- set issue_date=issue_daten
+-- where member_id=member_idn and book_id=book_idn;
+-- update return_
+-- set return_date= DATE_ADD(issue_date, INTERVAL 3 MONTH)
+-- where member_id=member_id and book_id=book_id;
+-- end $$
+-- delimiter ;
+
+-- call renew(100,200,"2020-04-07");
+
+DELIMITER $$
+CREATE TRIGGER trig1
+AFTER UPDATE on payment
+FOR EACH ROW
+BEGIN
+    IF new.fine=0 THEN
+        UPDATE return_
+        SET ret_status = 0
+        WHERE member_id=new.member_id AND book_id=new.book_id;
+        end if; 
+END $$
+
+DELIMITER ;
+
+select * from issue;
+delimiter $$
+create procedure login(in member_idn int,in passwordsn varchar(10),out res int) 
+
+begin
+
+select count(*) into res from member where mem_id=member_idn and passwords=passwordsn;
+
+end$$
+delimiter ;
+
+call login(1,"ddv",@r);
+select @r;
+
+delimiter $$
+create procedure pay_done(in pay_id int)
+begin
+update payment 
+set fine=0
+where payment_id=pay_id;
+end$$
+delimiter ;
+
+call pay_done(4);
+select * from payment;
+
+select * from return_;
+
+select datediff("2020-05-09",curdate());
+
+select A.member_id,B.book_id,B.amount,A.payment_id
+from return_  A inner join book B
+on A.book_id=B.book_id
+where A.ret_status=1 and datediff(curdate(),A.return_date)>90 and A.payment_id is null;
+
+
+delimiter $$
+create procedure fine()
+begin
+declare done int default 0;
+declare mem_id int;
+declare bk_id int;
+declare amt int;
+declare fn int;
+declare pay int;
+declare cur cursor for select distinct A.member_id,B.book_id,B.amount,A.payment_id
+from return_  A inner join book B
+on A.book_id=B.book_id
+where A.ret_status=1 and datediff(curdate(),A.return_date)>90 and A.payment_id is null;
+declare continue handler for not found set done=1;
+open cur;
+repeat
+
+fetch cur into mem_id,bk_id,amt,pay;
+if done=0 then
+set fn=0.2*amt;
+insert into payment(fine,fine_date,book_id,member_id)values(fn,curdate(),bk_id,mem_id);
+
+end if;
+until done
+end repeat;
+close cur;
+end$$
+delimiter ;
+
+call fine();
+select * from return_;
+select * from payment;
+
+ select distinct A.member_id,B.book_id,A.payment_id
+from payment A inner join return_ B
+on A.book_id=B.book_id
+where A.member_id=B.member_id and B.payment_id is null;
+
+delimiter $$
+create procedure upd_pay_id()
+begin
+declare done int default 0;
+declare mem_id int;
+declare bk_id int;
+declare amt int;
+declare fn int;
+declare pay int;
+declare cur cursor for  select distinct A.member_id,B.book_id,A.payment_id
+from payment A inner join return_ B
+on A.book_id=B.book_id
+where A.member_id=B.member_id and B.payment_id is null;
+declare continue handler for not found set done=1;
+open cur;
+repeat
+fetch cur into mem_id,bk_id,pay;
+if done=0 then
+update return_
+set payment_id=pay
+where member_id=mem_id and book_id=bk_id;
+
+end if;
+until done
+end repeat;
+close cur;
+end$$
+delimiter ;
+call upd_pay_id();
+select * FROM return_;
+select * from payment;
+
+
