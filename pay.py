@@ -1,7 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
-from donate import *
-from issue import *
+from indexed import *
 import mini
 
 def paym():
@@ -16,8 +15,16 @@ def paym():
             list1.insert(END,row)
 
     def pay():
-        mini.payd(payid.get())
-        messagebox.showinfo("Success","Payment Successfull")
+        if(len(payid.get())!=0):
+            mini.payd(payid.get())
+            messagebox.showinfo("Success","Payment Successfull")
+        else:
+            messagebox.showinfo("Error","Payment id should be entered for payment")
+
+    def back():
+        window.destroy()
+        index()
+        
 
     window=Tk()
     window.minsize(width=400,height=400)

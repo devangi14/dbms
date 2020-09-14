@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter import messagebox
-from index import *
+from indexed import *
 import mini
 
 
@@ -9,8 +9,12 @@ import mini
 def registers():
 
     def reg():
-        mini.ins_mem(Text6.get(),Text7.get(),Text4.get(),Text5.get())
-        index()
+        if(len(Text6.get())!=0 and len(Text7.get())!=0 and len(Text4.get())!=0 and len(Text5.get())!=0 ):
+            mini.ins_mem(Text6.get(),Text7.get(),Text4.get(),Text5.get())
+            window.destroy()
+            indexed()
+        else:
+             messagebox.showinfo("Error","All fields should be filled")
     
     window=Tk()
     window.minsize(width=400,height=400)

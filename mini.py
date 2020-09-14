@@ -101,6 +101,7 @@ def ins_book(book_name,amount,author):
     con.commit()
     con.close()
     
+    
 def ins_issue(member_id,book_id,issue_date):
     con = mysql.connector.connect(
     user="root", 

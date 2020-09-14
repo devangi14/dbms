@@ -1,12 +1,19 @@
 from tkinter import *
 from tkinter import messagebox
-
+from indexed import *
 import mini
 
 def donate():
     def don():
-        mini.ins_book(book_nm.get(),amount.get(),author.get())
-        messagebox.showinfo("Success","Thank You For Donating")
+        if(len(book_nm.get())!=0 and len(amount.get())!=0 and len(author.get())!=0 ):
+            mini.ins_book(book_nm.get(),amount.get(),author.get())
+            messagebox.showinfo("Success","Thank You For Donating")
+        else:
+            messagebox.showinfo("Error","All fields should be filled")
+
+    def backs():
+        window.iconify()
+        indexed()
         
         
     window=Tk()
@@ -17,6 +24,8 @@ def donate():
             
     Canvas1.config(bg="#517569")
     Canvas1.pack(expand=True,fill=BOTH)
+
+    
 
 
 
@@ -52,5 +61,8 @@ def donate():
 
     donate= Button(window,text="Donate",bg='#d1ccc0', fg='black',command=don)
     donate.place(relx=0.5,rely=0.75, relwidth=0.18,relheight=0.08)
+
+    back= Button(window,text="Back to Index",bg='#d1ccc0', fg='black',command=backs)
+    back.place(relx=0.2,rely=0.75, relwidth=0.18,relheight=0.08)
 
     window.mainloop()
